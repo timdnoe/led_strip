@@ -17,13 +17,11 @@ int bPin =11;
 int rLED;
 int gLED;
 int bLED;
-int r;
-int mod;
+int r;            // remainder
+int mod;          // pitchbend mod
 int onOff = 0;
-char maxC;  
+char maxC;        // brightest color
 byte pbVelocity;
-
-//light up led at pin 13 when receiving noteON message with note = 60
 
 void setup(){
   Serial.begin(31250);
@@ -39,22 +37,20 @@ void setup(){
 void Lights(){
   do{
     if (Serial.available()){
-      commandByte = Serial.read();//read first byte
-      noteByte = Serial.read();//read next byte
-      velocityByte = Serial.read();//read final byte
+      commandByte = Serial.read();  //read first byte
+      noteByte = Serial.read(); //read next byte
+      velocityByte = Serial.read(); //read final byte
 
-      if (commandByte == noteOn){//if note on message
-        //check if note == 60 and velocity > 0
+      if (commandByte == noteOn){
         if (velocityByte > 0){
          onOff = 1;
-           rLED = colorR(noteByte);
-           gLED = colorG(noteByte);
-           bLED = colorB(noteByte);
-           setColor(rLED, gLED, bLED);
-
-
+         rLED = colorR(noteByte); // get red LED value
+         gLED = colorG(noteByte); // get green LED value
+         bLED = colorB(noteByte); // get blue LED value
+         setColor(rLED, gLED, bLED);
         }
       }
+
       if (commandByte == noteOff){
         rLED = 0;
         gLED = 0;
@@ -67,37 +63,32 @@ void Lights(){
       
       if (commandByte == pitchBend && onOff == 1){
         maxC = topColor(rLED, gLED, bLED);
-      //  mod = velocityByte;
-       if(rLED > 0){
+        if(rLED > 0){
          rLED = rLED * velocityByte;
          analogWrite(rPin, rLED * velocityByte);  
-     }
+        }
        if(gLED > 0){
          gLED = gLED * velocityByte;
          analogWrite(gPin, gLED * velocityByte);
-     }
+        }
        if(bLED > 0){
          bLED = bLED * velocityByte;
          analogWrite(bPin, bLED * velocityByte);
-     }
-
-        
-        
+         }
       }
          
     }
   }
-  while (Serial.available() > 2);//when at least three bytes available
+  while (Serial.available() > 2); //when at least three bytes available
 }
     
 
 void loop(){
   Lights();
-  delay(10);
- // digitalWrite(13,LOW);//turn led off
+  delay(10); // neccesary for arduino to read midi
 }
 
-int colorR(int noteByte){
+int colorR(int noteByte){  //finding red value on color wheel
   r = noteByte % 12;
   int red;
   if (r == 1 || r == 7){ 
@@ -114,7 +105,7 @@ int colorR(int noteByte){
   return red;
 }
 
-int colorG(int noteByte){
+int colorG(int noteByte){  //finding green value on color wheel
   r = noteByte % 12;
   int green;
   if (r == 5 || r == 11){
@@ -131,7 +122,7 @@ int colorG(int noteByte){
   return green;
 }
 
-int colorB(int noteByte){
+int colorB(int noteByte){  //finding blue value on color wheel
   r = noteByte % 12;
   int blue;
   if (r < 3 || r > 9){
@@ -165,16 +156,16 @@ char topColor(int r, int g, int b){
 	return maxC;
 }
 
-void pbWrite(int pin, int light, byte v){
-  if(v > 64){
-    analogWrite(pin, light + v);
-  }
-  else{
-    analogWrite(rPin, rLED - (v / 2));
-    analogWrite(gPin, gLED - (v / 2));
-    analogWrite(bPin, bLED - (v / 2));
-  }
-}
+// void pbWrite(int pin, int light, byte v){
+//   if(v > 64){
+//     analogWrite(pin, light + v);
+//   }
+//   else{
+//     analogWrite(rPin, rLED - (v / 2));
+//     analogWrite(gPin, gLED - (v / 2));
+//     analogWrite(bPin, bLED - (v / 2));
+//   }
+// }
 
 
 
