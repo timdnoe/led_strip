@@ -14,13 +14,18 @@ int lastColor;
 int rPin = 10;
 int gPin = 6;
 int bPin =11;
-int rLED;
-int gLED;
-int bLED;
+int rLED = 0;
+int gLED = 0;
+int bLED = 0;
+int rLED_old = -1;
+int gLED_old = -1;
+int bLED_old = -1;
 int r;            // remainder
 int mod;          // pitchbend mod
 int onOff = 0;
-char maxC;        // brightest color
+int ons = -1;
+char maxC; // brightest color
+char lastCommand;
 byte pbVelocity;
 
 void setup(){
@@ -42,23 +47,30 @@ void Lights(){
       velocityByte = Serial.read(); //read final byte
 
       if (commandByte == noteOn){
-        if (velocityByte > 0){
          onOff = 1;
+         ons = ons + 1;
+      if(rLED != colorR(noteByte)) rLED_old = rLED;
+      if(gLED != colorG(noteByte)) gLED_old = gLED;
+      if(bLED != colorB(noteByte)) bLED_old = bLED;
          rLED = colorR(noteByte); // get red LED value
          gLED = colorG(noteByte); // get green LED value
          bLED = colorB(noteByte); // get blue LED value
          setColor(rLED, gLED, bLED);
-        }
       }
 
       if (commandByte == noteOff){
-        rLED = 0;
-        gLED = 0;
-        bLED = 0;
-        digitalWrite(rPin,LOW);//turn led off
-        digitalWrite(gPin,LOW);//turn led off
-        digitalWrite(bPin,LOW);//turn led off  
-        onOff = 0;      
+        if(ons > 0){
+          setColor(rLED_old, gLED_old, bLED_old);
+          ons = 0;
+        }
+        else{
+          digitalWrite(rPin,LOW);//turn led off
+          digitalWrite(gPin,LOW);//turn led off
+          digitalWrite(bPin,LOW);//turn led off 
+          ons = -1;        
+       }
+        onOff = 0;  
+        
       }
       
       if (commandByte == pitchBend && onOff == 1){
@@ -81,11 +93,12 @@ void Lights(){
   }
   while (Serial.available() > 2); //when at least three bytes available
 }
+
     
 
 void loop(){
   Lights();
-  delay(10); // neccesary for arduino to read midi
+  delay(5); // neccesary for arduino to read midi
 }
 
 int colorR(int noteByte){  //finding red value on color wheel
@@ -138,9 +151,9 @@ int colorB(int noteByte){  //finding blue value on color wheel
 }
 
 void setColor(int r, int g, int b){
-         analogWrite(rPin, rLED);
-         analogWrite(gPin, gLED);
-         analogWrite(bPin, bLED); 
+         analogWrite(rPin, r);
+         analogWrite(gPin, g);
+         analogWrite(bPin, b); 
 }
 
 char topColor(int r, int g, int b){
