@@ -1,0 +1,221 @@
+/** By Ryan Millner
+Spring 2015
+**/
+
+
+byte commandByte;
+byte noteByte;
+byte velocityByte;
+
+byte noteOn = 144;
+byte noteOff = 128;
+byte pitchBend = 224;
+byte modulation = 176;
+int lastColor;
+int rPin = 10; // set to correct value
+int gPin = 6;  // set to correct value
+int bPin = 11;  // set to correct value
+int rLED = 0;
+int gLED = 0;
+int bLED = 0;
+int r;
+int rr;            // remainder red
+int rg;            // remainder green
+int rb;            // remainder blue
+int mod;          // pitchbend mod
+int onOff = 0;
+int keys = 0; // number of keys pressed
+int shift = 0; //shift in key spectrum 
+int keyQuant = 12;
+const int maxKeys = 10;
+int keyPress[maxKeys];
+int keyPressPosition = 0;
+char maxC; // brightest color
+char lastCommand;
+byte pbVelocity;
+byte lastNote;
+
+void setup(){
+  Serial.begin(31250);
+  pinMode(rPin, OUTPUT);
+  pinMode(gPin, OUTPUT);
+  pinMode(bPin, OUTPUT);
+  digitalWrite(rPin,LOW);
+  digitalWrite(gPin,LOW);
+  digitalWrite(bPin,LOW);
+ 
+}
+
+void Lights(){
+  do{
+    if (Serial.available()){
+      commandByte = Serial.read();  //read first byte
+      noteByte = Serial.read(); //read next byte
+      velocityByte = Serial.read(); //read final byte
+
+      if (commandByte == noteOn && velocityByte > 0) { 
+     //setColor(0,0,0);   
+        onOff = 1;
+        keys++;
+        /*r = (noteByte % 12) / 1;
+        rLED = colorR(); // get red LED value
+        gLED = colorG(); // get green LED value
+        bLED = colorB(); // get blue LED value
+        setColor(rLED, gLED, bLED);*/
+        keyPress[keys - 1] = noteByte;
+      }
+
+      if (commandByte == noteOff){
+        keys--;
+        
+        //finding the noteOff value in the array
+        for (int i = 0; i < maxKeys; i++){
+          if (noteByte = keyPress[i]) {
+            keyPressPosition = i;
+            break;
+          }
+        }
+        keyPress[keyPressPosition] = 0;
+        
+        //shifting values over in array if noteOff was not most recent noteOn
+        for (int i = keyPressPosition + 1; i <= maxKeys; i++){
+          if (keyPress[i] != 0){
+            keyPress[i - 1] = keyPress[i];
+            keyPress[i] = 0;
+          }
+        }
+      }
+      
+      //setting most recent midi value to color
+      for (int i = maxKeys; i = 0; i--){
+        if (keyPress[i] != 0) {
+         r = keyPress[i] % 12;
+         rLED = colorR(); // get red LED value
+         gLED = colorG(); // get green LED value
+         bLED = colorB(); // get blue LED value
+         break; 
+        }
+      }
+      
+      if (commandByte == pitchBend && onOff == 1){
+         pbWrite(velocityByte); // write using pitch bend func
+      }
+
+//      if (commandByte == modulation && onOff == 1){
+//         modWrite(velocityByte); // write using pitch bend func
+//      }
+         
+    }
+  }
+  while (Serial.available() > 0); //when at least three bytes available
+}
+
+    
+
+void loop(){
+  Lights();
+  setColor(rLED, gLED, bLED);
+  delay(5); // change for optimal results: 0 > d > 100
+}
+
+int colorR(){  //finding red value on color wheel
+  int red;
+  if (r == 1 || r == 7){ 
+    red = 64;
+  }
+  else if (r > 1 && r < 7){
+    red = 127; 
+  }
+  
+  else{
+    red = 0;
+  }
+  
+  return red;
+}
+
+int colorG(){  //finding green value on color wheel
+  int green;
+  if (r == 5 || r == 11){
+    green = 64;
+  }
+  else if (r >= 0 && r < 5){
+    green = 0; 
+  }
+  
+  else{
+    green = 127;
+  }
+  
+  return green;
+}
+
+int colorB(){  //finding blue value on color wheel
+  int blue;
+  if (r < 3 || r > 9){
+    blue = 127;
+  }
+  else if (r == 3 || r == 9){
+    blue = 64; 
+  }
+  else{
+    blue = 0;
+  }
+  return blue;
+}
+
+void setColor(int r, int g, int b){
+         analogWrite(rPin, r);
+         analogWrite(gPin, g);
+         analogWrite(bPin, b); 
+}
+
+char topColor(int r, int g, int b){
+	if(r > g && r > b){
+		maxC = 'r';
+	}
+	else if(g > b){
+		maxC = 'g';
+	}
+	else{
+		maxC = 'b';
+	}
+	return maxC;
+}
+
+
+//Pitch Bend Function - room for improvement
+void pbWrite(byte velocity){
+   char pin = topColor(rLED, gLED, bLED);
+//  if(rLED > 0 && maxC != 'rPin'){
+//    digitalWrite(rLED, 0);
+//  }
+//  
+//  if(gLED > 0 && maxC != 'gPin'){
+//    digitalWrite(gLED, 0);
+//  }
+//  
+//  if(bLED > 0 && maxC != 'bPin'){
+//    digitalWrite(bLED, 0);
+//  }
+  if(pin=='r'){
+    analogWrite(rPin, velocity * 2);
+  }
+  if(pin=='g'){
+    analogWrite(gPin, velocity * 2);
+  }
+  if(pin=='b'){
+    analogWrite(bPin, velocity * 2);
+  }  
+}
+
+////Mod Function - coming soon
+//void modWrite(byte velocity){
+//  while(velocity > 0 && onOff >= 1){
+//    setColor(rLED, gLED, bLED);
+//    delay(velocity * 5);
+//    setColor(0, 0, 0);
+//    delay(velocity * 5);
+//  }
+//}
+
